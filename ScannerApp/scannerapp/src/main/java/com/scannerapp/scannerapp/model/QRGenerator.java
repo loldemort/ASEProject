@@ -1,66 +1,29 @@
-package com.scannerapp.scannerapp;
+package com.scannerapp.scannerapp.model;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.ImageView;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
+import com.google.zxing.*;
 import com.google.zxing.common.BitMatrix;
-import com.scannerapp.scannerapp.model.QRGenerator;
+import com.scannerapp.scannerapp.R;
 
-/*public class MainActivity extends AppCompatActivity {
+/**
+ * Created by oysteinhauan on 10/01/17.
+ */
+public class QRGenerator extends Activity{
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-}*/
-
-public class MainActivity extends Activity {
-    ImageView qrCodeImageview;
-    String QRcode;
+    private String url;
+    private ImageView qrCodeImageview;
     public final static int WIDTH=500;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        getID();
-        QRGenerator qr = new QRGenerator("www.facebook.com");
-// create thread to avoid ANR Exception
-       /* Thread t = new Thread(new Runnable() {
+    public QRGenerator(String url){
+        this.url = url;
+    }
+
+    public void initializeQR(final String url){
+        Thread t = new Thread(new Runnable() {
             public void run() {
 // this is the msg which will be encode in QRcode
-                QRcode="www.vg.no";
 
 
 
@@ -74,7 +37,7 @@ public class MainActivity extends Activity {
                                 try {
                                     Bitmap bitmap = null;
 
-                                    bitmap = encodeAsBitmap(QRcode);
+                                    bitmap = encodeAsBitmap(url);
                                     qrCodeImageview.setImageBitmap(bitmap);
 
                                 } catch (WriterException e) {
@@ -93,15 +56,15 @@ public class MainActivity extends Activity {
 
             }
         });
-        t.start();*/
-
+        t.start();
     }
+
 
     private void getID() {
         qrCodeImageview=(ImageView) findViewById(R.id.img_qr_code_image);
     }
 
-    /*// this is method call from on create and return bitmap image of QRCode.
+    // this is method call from on create and return bitmap image of QRCode.
     Bitmap encodeAsBitmap(String str) throws WriterException {
         BitMatrix result;
         try {
@@ -123,7 +86,5 @@ public class MainActivity extends Activity {
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         bitmap.setPixels(pixels, 0, 500, 0, 0, w, h);
         return bitmap;
-    } /// end of this */
-
-
+    } /// end of this method
 }
