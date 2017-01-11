@@ -9,7 +9,7 @@
                 tools:context=".MainActivity">
 
 
-    <Button android:layout_width="200px"
+    <Button android:layout_width="600px"
             android:layout_height="200px"
             android:onClick="getQR"
             android:text="@string/generate_qr"
