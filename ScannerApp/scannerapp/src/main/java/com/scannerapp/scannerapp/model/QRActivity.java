@@ -10,14 +10,15 @@ import com.scannerapp.scannerapp.R;
 /**
  * Created by oysteinhauan on 10/01/17.
  */
-public class QRGenerator extends Activity{
+public class QRActivity extends Activity{
 
     private String url;
     private ImageView qrCodeImageview;
     public final static int WIDTH=500;
 
-    public QRGenerator(String url){
+    public QRActivity(String url){
         this.url = url;
+        getID();
     }
 
     public void initializeQR(final String url){
