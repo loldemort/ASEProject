@@ -1,11 +1,13 @@
 package com.scannerapp.scannerapp;
 
 import android.graphics.Bitmap;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.TextView;
+
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
@@ -13,45 +15,50 @@ import com.google.zxing.common.BitMatrix;
 
 public class QRcode extends AppCompatActivity {
 
-    private String url;
+    private String qr_code_string;
     private ImageView qrCodeImageview;
-    public final static int WIDTH=500;
+    public final static int WIDTH = 500;
+    private boolean bonus;
+    private TextView bonus_information;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_qrcode);
-        getID();
-        initializeQR("www.nrk.no");
+        qr_code_string = getIntent().getStringExtra("QR_STRING");
+        qrCodeImageview = (ImageView) findViewById(R.id.img_qr_code_image);
+        initializeQR(qr_code_string);
+        bonus_information = (TextView) findViewById(R.id.bonus_info);
+        bonus = getIntent().getBooleanExtra("BONUS", false);
+        if (bonus) {
+            bonus_information.setText("You have met the requirements for a grading bonus.");
+        } else {
+            bonus_information.setText("You have not met the requirements for a grading bonus yet.");
+        }
     }
 
 
 
-    public void initializeQR(final String url){
+    public void initializeQR(final String qr_string){
         Thread t = new Thread(new Runnable() {
             public void run() {
-// this is the msg which will be encode in QRcode
-
-
 
                 try {
                     synchronized (this) {
-                        wait(5000);
-// runOnUiThread method used to do UI task in main thread.
+                        wait(500);
+                        // runOnUiThread method used to do UI task in main thread.
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 try {
-                                    Bitmap bitmap = null;
-
-                                    bitmap = encodeAsBitmap(url);
+                                    Bitmap bitmap = encodeAsBitmap(qr_string);
                                     qrCodeImageview.setImageBitmap(bitmap);
 
                                 } catch (WriterException e) {
                                     e.printStackTrace();
-                                } // end of catch block
+                                }
 
-                            } // end of run method
+                            }
                         });
 
                     }
@@ -59,24 +66,17 @@ public class QRcode extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-
-
             }
         });
         t.start();
     }
 
 
-    private void getID() {
-        qrCodeImageview=(ImageView) findViewById(R.id.img_qr_code_image);
-    }
-
-    // this is method call from on create and return bitmap image of QRCode.
+    // this is method call to create and return bitmap image of QRCode.
     Bitmap encodeAsBitmap(String str) throws WriterException {
         BitMatrix result;
         try {
-            result = new MultiFormatWriter().encode(str,
-                    BarcodeFormat.QR_CODE, WIDTH, WIDTH, null);
+            result = new MultiFormatWriter().encode(str, BarcodeFormat.QR_CODE, WIDTH, WIDTH, null);
         } catch (IllegalArgumentException iae) {
             // Unsupported format
             return null;
@@ -93,7 +93,7 @@ public class QRcode extends AppCompatActivity {
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         bitmap.setPixels(pixels, 0, 500, 0, 0, w, h);
         return bitmap;
-    } /// end of this method
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

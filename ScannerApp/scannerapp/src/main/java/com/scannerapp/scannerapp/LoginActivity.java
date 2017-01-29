@@ -3,67 +3,41 @@ package com.scannerapp.scannerapp;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
-
-import android.app.LoaderManager.LoaderCallbacks;
-import android.content.ContentResolver;
-import android.content.CursorLoader;
+import android.app.Activity;
 import android.content.Intent;
-import android.content.Loader;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.AsyncTask;
-
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.common.SignInButton;
-import com.google.zxing.qrcode.encoder.QRCode;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
 
-/**
- * A login screen that offers login via email/password and via Google+ sign in.
- * <p/>
- * ************ IMPORTANT SETUP NOTES: ************
- * In order for Google+ sign in to work with your app, you must first go to:
- * https://developers.google.com/+/mobile/android/getting-started#step_1_enable_the_google_api
- * and follow the steps in "Step 1" to create an OAuth 2.0 client for your package.
- */
-public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<Cursor> {
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
-    /**
-     * A dummy authentication store containing known user names and passwords.
-     * TODO: remove after connecting to a real authentication system.
-     */
-    private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "foo@example.com:hello", "bar@example.com:world", "example@mytum.de:mytum"
-    };
+import static android.content.ContentValues.TAG;
+
+public class LoginActivity extends Activity {
+
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
     private UserLoginTask mAuthTask = null;
 
     // UI references.
-    private AutoCompleteTextView mEmailView;
-    private EditText mPasswordView;
+    private AutoCompleteTextView matr_nr_View;
     private View mProgressView;
-    private View mEmailLoginFormView;
-    private SignInButton mPlusSignInButton;
-    private View mSignOutButtons;
     private View mLoginFormView;
 
     @Override
@@ -71,41 +45,11 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Find the Google+ sign in button.
-        mPlusSignInButton = (SignInButton) findViewById(R.id.plus_sign_in_button);
-        if (!supportsGooglePlayServices()) {
-            // Set a listener to connect the user when the G+ button is clicked.
-            mPlusSignInButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    signIn();
-                }
-            });
-        } else {
-            // Don't offer G+ sign in if the app's version is too low to support Google Play
-            // Services.
-            mPlusSignInButton.setVisibility(View.GONE);
-            return;
-        }
-
         // Set up the login form.
-        mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
-        populateAutoComplete();
+        matr_nr_View = (AutoCompleteTextView) findViewById(R.id.matriculation_number);
 
-        mPasswordView = (EditText) findViewById(R.id.password);
-        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == R.id.login || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
+        Button signInButton = (Button) findViewById(R.id.sign_in_button);
+        signInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 attemptLogin();
@@ -114,17 +58,12 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-        mEmailLoginFormView = findViewById(R.id.email_login_form);
-        mSignOutButtons = findViewById(R.id.plus_sign_out_buttons);
-    }
 
-    private void populateAutoComplete() {
-        getLoaderManager().initLoader(0, null, this);
     }
 
 
     /**
-     * Attempts to sign in or register the account specified by the login form.
+     * Attempts to sign in the account specified by the login form.
      * If there are form errors (invalid email, missing fields, etc.), the
      * errors are presented and no actual login attempt is made.
      */
@@ -134,31 +73,22 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
         }
 
         // Reset errors.
-        mEmailView.setError(null);
-        mPasswordView.setError(null);
+        matr_nr_View.setError(null);
 
         // Store values at the time of the login attempt.
-        String email = mEmailView.getText().toString();
-        String password = mPasswordView.getText().toString();
+        String matr_nr = matr_nr_View.getText().toString();
 
         boolean cancel = false;
         View focusView = null;
 
-        // Check for a valid password, if the user entered one.
-        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
-            mPasswordView.setError(getString(R.string.error_invalid_password));
-            focusView = mPasswordView;
+        // Check for a valid matriculation number.
+        if (TextUtils.isEmpty(matr_nr)) {
+            matr_nr_View.setError(getString(R.string.error_field_required));
+            focusView = matr_nr_View;
             cancel = true;
-        }
-
-        // Check for a valid email address.
-        if (TextUtils.isEmpty(email)) {
-            mEmailView.setError(getString(R.string.error_field_required));
-            focusView = mEmailView;
-            cancel = true;
-        } else if (!isEmailValid(email)) {
-            mEmailView.setError(getString(R.string.error_invalid_email));
-            focusView = mEmailView;
+        } else if (!isMatrNrValid(matr_nr)) {
+            matr_nr_View.setError(getString(R.string.error_invalid_matrnr));
+            focusView = matr_nr_View;
             cancel = true;
         }
 
@@ -170,19 +100,13 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(email, password);
+            mAuthTask = new UserLoginTask(matr_nr);
             mAuthTask.execute((Void) null);
         }
     }
 
-    private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
-        return email.contains("@");
-    }
-
-    private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
-        return password.length() > 4;
+    private boolean isMatrNrValid(String matr_nr) {
+        return matr_nr.length() == 7;
     }
 
     /**
@@ -221,119 +145,11 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
         }
     }
 
-    @Override
-    protected void onPlusClientSignIn() {
-        //Set up sign out and disconnect buttons.
-        Button signOutButton = (Button) findViewById(R.id.plus_sign_out_button);
-        signOutButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                signOut();
-            }
-        });
-        Button disconnectButton = (Button) findViewById(R.id.plus_disconnect_button);
-        disconnectButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                revokeAccess();
-            }
-        });
-    }
-
-    @Override
-    protected void onPlusClientBlockingUI(boolean show) {
-        showProgress(show);
-    }
-
-    @Override
-    protected void updateConnectButtonState() {
-        //TODO: Update this logic to also handle the user logged in by email.
-        boolean connected = getPlusClient().isConnected();
-
-        mSignOutButtons.setVisibility(connected ? View.VISIBLE : View.GONE);
-        mPlusSignInButton.setVisibility(connected ? View.GONE : View.GONE);
-        mEmailLoginFormView.setVisibility(connected ? View.GONE : View.VISIBLE);
-    }
-
-    @Override
-    protected void onPlusClientRevokeAccess() {
-        // TODO: Access to the user's G+ account has been revoked.  Per the developer terms, delete
-        // any stored user data here.
-    }
-
-    @Override
-    protected void onPlusClientSignOut() {
-
-    }
-
-    public void finish(){
+    public void finish(String qr_code_string, boolean bonus) {
         Intent intent = new Intent(this, QRcode.class);
+        intent.putExtra("QR_STRING", qr_code_string);
+        intent.putExtra("BONUS", bonus);
         startActivity(intent);
-    }
-
-    /**
-     * Check if the device supports Google Play Services.  It's best
-     * practice to check first rather than handling this as an error case.
-     *
-     * @return whether the device supports Google Play Services
-     */
-    private boolean supportsGooglePlayServices() {
-        return GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) ==
-                ConnectionResult.SUCCESS;
-    }
-
-    @Override
-    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return new CursorLoader(this,
-                // Retrieve data rows for the device user's 'profile' contact.
-                Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
-                        ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
-
-                // Select only email addresses.
-                ContactsContract.Contacts.Data.MIMETYPE +
-                        " = ?", new String[]{ContactsContract.CommonDataKinds.Email
-                .CONTENT_ITEM_TYPE},
-
-                // Show primary email addresses first. Note that there won't be
-                // a primary email address if the user hasn't specified one.
-                ContactsContract.Contacts.Data.IS_PRIMARY + " DESC");
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-        List<String> emails = new ArrayList<String>();
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-            emails.add(cursor.getString(ProfileQuery.ADDRESS));
-            cursor.moveToNext();
-        }
-
-        addEmailsToAutoComplete(emails);
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> cursorLoader) {
-
-    }
-
-    private interface ProfileQuery {
-        String[] PROJECTION = {
-                ContactsContract.CommonDataKinds.Email.ADDRESS,
-                ContactsContract.CommonDataKinds.Email.IS_PRIMARY,
-        };
-
-        int ADDRESS = 0;
-        int IS_PRIMARY = 1;
-    }
-
-
-    private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
-        //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<String>(LoginActivity.this,
-                        android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
-
-        mEmailView.setAdapter(adapter);
     }
 
     /**
@@ -342,36 +158,121 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
      */
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
-        private final String mEmail;
-        private final String mPassword;
+        private final String matr_nr;
+        private String xml_data;
+        private String qr_code_string;
+        private boolean bonus;
 
-        UserLoginTask(String email, String password) {
-            mEmail = email;
-            mPassword = password;
+        UserLoginTask(String matrnr) {
+            matr_nr = matrnr;
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
+
+            String ase_url = "https://aseatdappp1942369597trial.hanatrial.ondemand.com/ASEATD/OData.svc/Exercises?$filter=Student%20eq%20" + matr_nr +"&$orderby=Id%20desc&$top=1";
+
+            xml_data = downloadXML(ase_url);
+            if (xml_data == null) {
+                return false;
+            } else {
+                return parse(xml_data);
+            }
+
+        }
+
+        private String downloadXML(String urlPath) {
+            StringBuilder xmlResult = new StringBuilder();
 
             try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
-            }
+                URL url = new URL(urlPath);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
+                int charsRead;
+                char[] inputBuffer = new char[500];
+                while (true) {
+                    charsRead = reader.read(inputBuffer);
+                    if (charsRead < 0) {
+                        break;
+                    }
+                    if (charsRead > 0) {
+                        xmlResult.append(String.copyValueOf(inputBuffer, 0, charsRead));
+                    }
                 }
+                reader.close();
+                Log.d(TAG, "xml result: " + xmlResult.toString());
+
+                return xmlResult.toString();
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (SecurityException e) {
+                e.printStackTrace();
             }
 
-            // TODO: register the new account here.
-            return true;
+            return null;
         }
+
+        public boolean parse(String xmlData) {
+            boolean status = true;
+            boolean inQRCode = false;
+            boolean inBonus = false;
+            String textValue = "";
+
+            try {
+                XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+                factory.setNamespaceAware(true);
+                XmlPullParser xpp = factory.newPullParser();
+                xpp.setInput(new StringReader(xmlData));
+                int eventType = xpp.getEventType();
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    String tagName = xpp.getName();
+                    switch (eventType) {
+                        case XmlPullParser.START_TAG:
+                            if ("Qrcode".equalsIgnoreCase(tagName)) {
+                                inQRCode = true;
+                            } else if ("Bonus".equalsIgnoreCase(tagName)) {
+                                inBonus = true;
+                            }
+                            break;
+
+                        case XmlPullParser.TEXT:
+                            textValue = xpp.getText();
+                            Log.d(TAG, "textvalue " + textValue);
+                            break;
+
+                        case XmlPullParser.END_TAG:
+                            if (inQRCode) {
+                                qr_code_string = textValue;
+                                inQRCode = false;
+                                } else if (inBonus) {
+                                bonus = Boolean.parseBoolean(textValue);
+                            }
+                            break;
+
+                        default:
+                            // nothing else to do
+                    }
+                    eventType = xpp.next();
+                }
+
+            } catch (Exception e) {
+                status = false;
+                e.printStackTrace();
+            }
+
+            if (qr_code_string == null) {
+                status = false;
+            }
+            Log.d(TAG, "status " + status);
+            Log.d(TAG, "qrstring " + qr_code_string);
+            Log.d(TAG, "bonus " + bonus);
+            return status;
+        }
+
 
         @Override
         protected void onPostExecute(final Boolean success) {
@@ -379,10 +280,10 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
             showProgress(false);
 
             if (success) {
-                finish();
+                finish(qr_code_string, bonus);
             } else {
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
+                matr_nr_View.setError(getString(R.string.error_invalid_matrnr));
+                matr_nr_View.requestFocus();
             }
         }
 
@@ -391,6 +292,7 @@ public class LoginActivity extends PlusBaseActivity implements LoaderCallbacks<C
             mAuthTask = null;
             showProgress(false);
         }
+
     }
 }
 

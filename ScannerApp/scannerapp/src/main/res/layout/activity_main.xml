@@ -13,8 +13,6 @@
             android:layout_height="200px"
             android:onClick="getQR"
             android:text="@string/generate_qr"
-
-
             android:layout_centerVertical="true" android:layout_centerHorizontal="true"/>
 
 </RelativeLayout>
