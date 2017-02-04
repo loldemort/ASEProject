@@ -9,7 +9,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AutoCompleteTextView;
@@ -25,8 +24,6 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import static android.content.ContentValues.TAG;
 
 public class LoginActivity extends Activity {
 
@@ -64,7 +61,7 @@ public class LoginActivity extends Activity {
 
     /**
      * Attempts to sign in the account specified by the login form.
-     * If there are form errors (invalid email, missing fields, etc.), the
+     * If there are form errors (invalid matrnr, missing fields, etc.), the
      * errors are presented and no actual login attempt is made.
      */
     public void attemptLogin() {
@@ -153,15 +150,15 @@ public class LoginActivity extends Activity {
     }
 
     /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
+     * Represents an asynchronous login task used to authenticate the user.
      */
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String matr_nr;
-        private String xml_data;
+        private String qr_xml;
+        private String bonus_xml;
         private String qr_code_string;
-        private boolean bonus;
+        private boolean bonus = false;
 
         UserLoginTask(String matrnr) {
             matr_nr = matrnr;
@@ -170,13 +167,17 @@ public class LoginActivity extends Activity {
         @Override
         protected Boolean doInBackground(Void... params) {
 
-            String ase_url = "https://aseatdappp1942369597trial.hanatrial.ondemand.com/ASEATD/OData.svc/Exercises?$filter=Student%20eq%20" + matr_nr +"&$orderby=Id%20desc&$top=1";
+            String qr_url = "https://aseatdappp1942369597trial.hanatrial.ondemand.com/ASEATD/OData.svc/Exercises?$filter=Matricno%20eq%20" + matr_nr + "&$orderby=Id%20desc&$top=1";
+            String bonus_url = "https://aseatdappp1942369597trial.hanatrial.ondemand.com/ASEATD/OData.svc/Students?$filter=Matricno%20eq%20" + matr_nr;
 
-            xml_data = downloadXML(ase_url);
-            if (xml_data == null) {
+            qr_xml = downloadXML(qr_url);
+            bonus_xml = downloadXML(bonus_url);
+
+            if (qr_xml == null || bonus_xml == null) {
                 return false;
             } else {
-                return parse(xml_data);
+                parse(bonus_xml);
+                return parse(qr_xml);
             }
 
         }
@@ -201,7 +202,6 @@ public class LoginActivity extends Activity {
                     }
                 }
                 reader.close();
-                Log.d(TAG, "xml result: " + xmlResult.toString());
 
                 return xmlResult.toString();
 
@@ -241,7 +241,6 @@ public class LoginActivity extends Activity {
 
                         case XmlPullParser.TEXT:
                             textValue = xpp.getText();
-                            Log.d(TAG, "textvalue " + textValue);
                             break;
 
                         case XmlPullParser.END_TAG:
@@ -250,6 +249,7 @@ public class LoginActivity extends Activity {
                                 inQRCode = false;
                                 } else if (inBonus) {
                                 bonus = Boolean.parseBoolean(textValue);
+                                inBonus = false;
                             }
                             break;
 
@@ -267,9 +267,6 @@ public class LoginActivity extends Activity {
             if (qr_code_string == null) {
                 status = false;
             }
-            Log.d(TAG, "status " + status);
-            Log.d(TAG, "qrstring " + qr_code_string);
-            Log.d(TAG, "bonus " + bonus);
             return status;
         }
 
@@ -295,4 +292,3 @@ public class LoginActivity extends Activity {
 
     }
 }
-
